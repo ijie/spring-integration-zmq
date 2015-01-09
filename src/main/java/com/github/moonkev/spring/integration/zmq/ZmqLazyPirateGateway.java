@@ -8,10 +8,10 @@ import java.util.concurrent.Future;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.Lifecycle;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.integration.Message;
-import org.springframework.integration.MessageChannel;
-import org.springframework.integration.MessageHandlingException;
 import org.springframework.integration.handler.AbstractReplyProducingMessageHandler;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandlingException;
 import org.springframework.util.Assert;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.PollItem;
@@ -62,9 +62,9 @@ public class ZmqLazyPirateGateway extends AbstractReplyProducingMessageHandler
 	
 	public void connect() {
 		if (socket != null) {
-			contextManager.context().destroySocket(socket);
+			contextManager.context().term();
 		}
-		socket = contextManager.context().createSocket(ZMQ.REQ);
+		socket = contextManager.context().socket(ZMQ.REQ);
 		socket.setSendTimeOut(socketSendTimeout);
 		socket.setLinger(linger);
 		socket.connect(address);
@@ -96,7 +96,7 @@ public class ZmqLazyPirateGateway extends AbstractReplyProducingMessageHandler
 				running = false;
 				Future<Void> response = executorService.submit(new Callable<Void>() {
 					public Void call() throws Exception {
-						contextManager.context().destroySocket(socket);
+						contextManager.context().close();
 						return null;
 					}
 				});
@@ -120,7 +120,7 @@ public class ZmqLazyPirateGateway extends AbstractReplyProducingMessageHandler
 				byte[] requestData = requestConverter.convert(requestMessage.getPayload());
 				int retriesLeft = retryCount;
 				while (!Thread.currentThread().isInterrupted()) {
-					socket.send(requestData);
+					socket.send(requestData, 0);
 					PollItem items[] = { new PollItem(socket, Poller.POLLIN) };
 					int rc = ZMQ.poll(items, socketReceiveTimeout);
 					if (rc == -1) {

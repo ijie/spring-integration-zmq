@@ -1,13 +1,14 @@
 package com.github.moonkev.spring.integration.zmq;
 
+import java.nio.charset.Charset;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.Lifecycle;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.integration.Message;
 import org.springframework.integration.handler.AbstractMessageHandler;
+import org.springframework.messaging.Message;
 import org.springframework.util.Assert;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
@@ -46,7 +47,7 @@ public class ZmqSendingMessageHandler extends AbstractMessageHandler implements 
 		
 		synchronized (startupMonitor) {
 			try {
-				socket = contextManager.context().createSocket(socketType);
+				socket = contextManager.context().socket(socketType);
 				if (bind) {
 					socket.bind(address);
 				} else {
@@ -62,18 +63,18 @@ public class ZmqSendingMessageHandler extends AbstractMessageHandler implements 
 				Message<?> message = messageQueue.take();
 				byte[] payload = converter.convert(message.getPayload());
 				if (topicBytes == null) {
-					socket.send(payload);
+					socket.send(payload, 0);
 				} else {
 					byte[] msgTopic = null;
 					if (message.getHeaders().containsKey("zmq.topic")) {
-						msgTopic = message.getHeaders().get("zmq.topic", String.class).getBytes(ZMQ.CHARSET);
+						msgTopic = message.getHeaders().get("zmq.topic", String.class).getBytes(Charset.defaultCharset());
 					} else {
 						msgTopic = topicBytes;
 					}
 					byte[] topicPayload = new byte[msgTopic.length + payload.length];
 					System.arraycopy(msgTopic, 0, topicPayload, 0, msgTopic.length);
 					System.arraycopy(payload, 0, topicPayload, msgTopic.length, payload.length);
-					socket.send(topicPayload);
+					socket.send(topicPayload, 0);
 				}
 			} catch (Throwable t) {
                 if (!running) {
@@ -137,7 +138,7 @@ public class ZmqSendingMessageHandler extends AbstractMessageHandler implements 
 	}
 	
 	public void setTopic(String topic) {
-		this.topicBytes = topic.getBytes(ZMQ.CHARSET);
+		this.topicBytes = topic.getBytes(Charset.defaultCharset());
 	}
 	
 	public void setSocketType(String socketTypeName) {

@@ -5,20 +5,22 @@ import java.util.HashSet;
 
 import org.springframework.context.Lifecycle;
 import org.zeromq.ZContext;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMQ.Context;
 
 public class ZmqContextManager implements Lifecycle {
 
-	private ZContext context;
+	private  Context context;
 		
 	private volatile boolean running = false;
 		
 	private Collection<ZmqContextShutdownListener> shutdownListeners = new HashSet<ZmqContextShutdownListener>();
 	
 	public ZmqContextManager(int ioThreads) {
-		context = new ZContext(ioThreads);
+		context = ZMQ.context(ioThreads);
 	}
 	
-	public ZContext context() {
+	public Context context() {
 		return context;
 	}
 
@@ -31,7 +33,7 @@ public class ZmqContextManager implements Lifecycle {
 		for (ZmqContextShutdownListener listener : shutdownListeners) {
 			listener.shutdownZmq();
 		}
-		context.getContext().term();
+		context.term();
 	}
 	
 	public boolean isRunning() {

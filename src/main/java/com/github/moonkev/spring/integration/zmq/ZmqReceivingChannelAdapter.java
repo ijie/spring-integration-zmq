@@ -1,5 +1,6 @@
 package com.github.moonkev.spring.integration.zmq;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import org.springframework.core.convert.converter.Converter;
@@ -34,7 +35,7 @@ public class ZmqReceivingChannelAdapter extends MessageProducerSupport implement
 		
 		synchronized (startupMonitor) {
 			try {
-				socket = contextManager.context().createSocket(socketType);
+				socket = contextManager.context().socket(socketType);
 				if (bind) {
 					socket.bind(address);
 				} else {
@@ -103,7 +104,7 @@ public class ZmqReceivingChannelAdapter extends MessageProducerSupport implement
 	
 	public void setTopic(String topic) {
 		this.topic = topic;
-		this.topicBytes = topic.getBytes(ZMQ.CHARSET);
+		this.topicBytes = topic.getBytes(Charset.defaultCharset());
 	}
 	
 	public void setSocketType(String socketTypeName) {
